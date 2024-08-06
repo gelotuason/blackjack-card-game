@@ -1,0 +1,22 @@
+# game summary
+1. every player is betting against the dealer
+2. goal: to get a higher hand than the dealer without going over 21. Going over 21 is called busting.
+3. if a player has a better hand than the dealer without busting, they win their bet. If they have a worse hand, the dealer takes their bet.
+
+# objective
+The goal of Blackjack is to beat the dealer’s hand without going over 21.
+
+# card values
+- 2 through 10: The number listed on the card (e.g., 2 is worth 2 points)
+- Jack, Queen, King: 10 points
+- Ace: 1 or 11 points (the player gets to choose)
+- An Ace and a 10, Jack, Queen, or King equals 21 points and is known as a Blackjack.
+
+# rules
+1. All the players make a bet with their chips.
+2. The dealer gives a card to each player as well as themselves.
+3. The dealer hands out a second card to every player.
+5. Decide if you want to stay or hit. (maximum 4 hits)
+6. Cycle through each player until they’ve each finished their turn.
+7. The dealer reveals their second card and winners are determined. (dealer's maximum hit, value >= 17)
+8. Bets are paid out and a new round begins.
