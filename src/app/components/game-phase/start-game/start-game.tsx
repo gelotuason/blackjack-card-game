@@ -1,86 +1,168 @@
 'use client';
 
-import { cardDeck, DeckProps } from "@/utils/deck";
+import { generatedDeck, DeckProps } from "@/utils/deck";
 import { useEffect, useState } from "react";
 
 type GameRole = 'player' | 'dealer';
 
+type ResultProps = {
+    message: string
+} | null;
+
 export default function StartGame() {
-    const [deck, setDeck] = useState<DeckProps[]>(cardDeck);
+    const [deck, setDeck] = useState<DeckProps[]>(generatedDeck);
     const [playerHand, setPlayerHand] = useState<DeckProps[]>([]);
     const [dealerHand, setDealerHand] = useState<DeckProps[]>([]);
     const [playerHandValue, setPlayerHandValue] = useState<number>(0);
     const [dealerHandValue, setDealerHandValue] = useState<number>(0);
+    const [playerHitCount, setPlayerHitCount] = useState<number>(0);
+    const [dealerTurn, setDealerTurn] = useState<boolean>(false);
 
-    // game flow states
-    const [newGame, setNewGame] = useState<Boolean>(true);
+    const [result, setResult] = useState<ResultProps | null>({ message: '' });
+    const [isGameOver, setIsGameOver] = useState<boolean>(false);
 
     useEffect(() => {
-        if (newGame && playerHand.length === 0 && dealerHand.length === 0) {
+        if (playerHand.length === 0 && dealerHand.length === 0) {
             drawCard('player', 2);
             drawCard('dealer', 1);
         }
-    }, []);
 
-    useEffect(() => {
-        countCardsInDeck();
-        calculateHandValue();
+        updateDeck();
     }, [playerHand, dealerHand]);
 
+    useEffect(() => {
+        // TODO: Prohibit dealer turn if player busts when hits
+        const determineResult = (): boolean | null => {
+            if (playerHandValue > 21 || playerHandValue === 21 || playerHitCount >= 4) return true;
+            else return false;
+        }
+
+        const gameOverResult = determineResult();
+        if (gameOverResult) {
+            setIsGameOver(gameOverResult);
+            setDealerTurn(true);
+        }
+    }, [playerHitCount, playerHandValue]);
+
+    useEffect(() => {
+        const determineResult = (): boolean => {
+            if (dealerTurn) {
+                if (
+                    dealerHandValue > 21 ||
+                    dealerHandValue === 21 ||
+                    dealerHandValue > playerHandValue ||
+                    dealerHandValue >= 17
+                ) return true;
+                else drawCard('dealer', 1);
+            }
+
+            return false;
+        }
+
+        const gameOverResult = determineResult();
+        if (gameOverResult) setIsGameOver(gameOverResult);
+    }, [dealerHandValue, dealerTurn]);
+
+    useEffect(() => {
+        const determineResult = (): ResultProps | null => {
+            switch (isGameOver) {
+                case playerHandValue > 21:
+                    return { message: 'Player busts. Dealer wins!' };
+                case dealerHandValue > 21:
+                    return { message: 'Dealer busts. Player wins!' };
+                case playerHandValue === 21:
+                    return { message: 'Player wins with a Blackjack!' };
+                case dealerHandValue === 21:
+                    return { message: 'Dealer wins with a Blackjack!' };
+                case playerHandValue > dealerHandValue:
+                    return { message: 'Player wins!' };
+                case playerHandValue < dealerHandValue:
+                    return { message: 'Dealer wins!' };
+                case playerHandValue === dealerHandValue:
+                    return { message: `It's a tie!` }
+                default:
+                    return null;
+            }
+        }
+
+        const gameOverResult = determineResult();
+        if (gameOverResult) setResult(gameOverResult);
+    }, [isGameOver]);
+
     const getRandomCard = (): DeckProps => {
-        const randomIndex = Math.floor(Math.random() * cardDeck.length);
+        const randomIndex = Math.floor(Math.random() * deck.length);
         const randomCard = deck[randomIndex];
 
         return randomCard;
     }
 
-    const drawCard = (gameRole: GameRole, times: number): void => {
-        const card: DeckProps[] = [];
+    const updateDeck = (): void => {
+        const drawnCards: DeckProps[] = [...playerHand, ...dealerHand];
+        const indices: number[] = [];
 
-        for (let i = 1; i <= times; i++) {
-            card.push(getRandomCard());
-        }
+        drawnCards.map((card) => {
+            indices.push(deck.indexOf(card));
+        })
 
-        gameRole == 'player' ? setPlayerHand([...playerHand, ...card]) : setDealerHand([...dealerHand, ...card]);
+        const updatedDeck = deck.filter((_, index) => !indices.includes(index));
+        setDeck(updatedDeck);
     }
 
-    const calculateHandValue = () => {
+    const drawCard = (gameRole: GameRole, times: number): void => {
+        const drawnCards: DeckProps[] = [];
+
+        for (let i = 1; i <= times; i++) {
+            const card = getRandomCard();
+            drawnCards.push(card);
+        }
+
+        if (gameRole === 'player') {
+            const newPlayerHand: DeckProps[] = [...playerHand, ...drawnCards];
+            setPlayerHand(newPlayerHand);
+            setPlayerHandValue(calculateHandValue(newPlayerHand));
+        } else {
+            const newDealerHand: DeckProps[] = [...dealerHand, ...drawnCards];
+            setDealerHand(newDealerHand);
+            setDealerHandValue(calculateHandValue(newDealerHand));
+        }
+    }
+
+    const calculateHandValue = (hand: DeckProps[]): number => {
         const constantRanks = ['J', 'Q', 'K'];
         const constantRanksValue = 10;
         const aceValues = [1, 11];
 
-        playerHand.map(card => {
-            if (constantRanks.includes(card.rank)) {
-                setPlayerHandValue(prev => prev + constantRanksValue)
-            } else if (card.rank == 'A') {
-                if (playerHandValue <= 10) setPlayerHandValue(prev => prev + aceValues[1]);
-                else setPlayerHandValue(prev => prev + aceValues[0]);
-            } else {
-                setPlayerHandValue(prev => prev + parseInt(card.rank));
-            }
-        });
+        let handValue = 0;
 
-        dealerHand.map(card => {
-            if (constantRanks.includes(card.rank)) {
-                setDealerHandValue(prev => prev + constantRanksValue)
-            } else if (card.rank == 'A') {
-                if (dealerHandValue <= 10) setDealerHandValue(prev => prev + aceValues[1]);
-                else setDealerHandValue(prev => prev + aceValues[0]);
-            } else {
-                setDealerHandValue(prev => prev + parseInt(card.rank));
-            }
-        });
+        if (hand.length !== 0) {
+            hand.map(card => {
+                if (constantRanks.includes(card.rank)) {
+                    handValue += constantRanksValue;
+                } else if (card.rank == 'A') {
+                    if (handValue <= 10) handValue += aceValues[1];
+                    else handValue += aceValues[0];
+                } else {
+                    handValue += parseInt(card.rank);
+                }
+            });
+        }
+
+        return handValue;
     }
 
-    const countCardsInDeck = () => {
-        const drawedCard = [...playerHand, ...dealerHand];
-        const newDeck = deck.filter(card => !drawedCard.includes(card));
-        setDeck(newDeck);
+    const handlePlayerHit = () => {
+        drawCard('player', 1);
+        setPlayerHitCount(prevCount => prevCount + 1);
+    }
+
+    const handleStand = () => {
+        setDealerTurn(true);
     }
 
     return (
         <main className="flex flex-col items-center p-10 h-full space-y-52">
             <p>{deck.length}</p>
+            {isGameOver ? <p>{result?.message}</p> : null}
             <div className="space-y-52">
                 <div>
                     <h1>Dealer: {dealerHandValue}</h1>
@@ -108,8 +190,8 @@ export default function StartGame() {
             </div>
 
             <div className="space-x-3">
-                <button onClick={() => drawCard('player', 1)} className="bg-orange-500 w-24 py-1 rounded-md">Hit</button>
-                <button className="bg-gray-500 w-24 py-1 rounded-md">Stand</button>
+                <button onClick={handlePlayerHit} disabled={isGameOver || playerHitCount >= 4} className="bg-orange-500 w-24 py-1 rounded-md">Hit</button>
+                <button onClick={handleStand} disabled={isGameOver} className="bg-gray-500 w-24 py-1 rounded-md">Stand</button>
             </div>
         </main>
     )
