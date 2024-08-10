@@ -7,7 +7,7 @@ type GameRole = 'player' | 'dealer';
 
 type ResultProps = {
     message: string
-} | null;
+}
 
 export default function StartGame() {
     const [deck, setDeck] = useState<DeckProps[]>(generatedDeck);
@@ -17,77 +17,8 @@ export default function StartGame() {
     const [dealerHandValue, setDealerHandValue] = useState<number>(0);
     const [playerHitCount, setPlayerHitCount] = useState<number>(0);
     const [dealerTurn, setDealerTurn] = useState<boolean>(false);
-
     const [result, setResult] = useState<ResultProps | null>({ message: '' });
     const [isGameOver, setIsGameOver] = useState<boolean>(false);
-
-    useEffect(() => {
-        if (playerHand.length === 0 && dealerHand.length === 0) {
-            drawCard('player', 2);
-            drawCard('dealer', 1);
-        }
-
-        updateDeck();
-    }, [playerHand, dealerHand]);
-
-    useEffect(() => {
-        // TODO: Prohibit dealer turn if player busts when hits
-        const determineResult = (): boolean | null => {
-            if (playerHandValue > 21 || playerHandValue === 21 || playerHitCount >= 4) return true;
-            else return false;
-        }
-
-        const gameOverResult = determineResult();
-        if (gameOverResult) {
-            setIsGameOver(gameOverResult);
-            setDealerTurn(true);
-        }
-    }, [playerHitCount, playerHandValue]);
-
-    useEffect(() => {
-        const determineResult = (): boolean => {
-            if (dealerTurn) {
-                if (
-                    dealerHandValue > 21 ||
-                    dealerHandValue === 21 ||
-                    dealerHandValue > playerHandValue ||
-                    dealerHandValue >= 17
-                ) return true;
-                else drawCard('dealer', 1);
-            }
-
-            return false;
-        }
-
-        const gameOverResult = determineResult();
-        if (gameOverResult) setIsGameOver(gameOverResult);
-    }, [dealerHandValue, dealerTurn]);
-
-    useEffect(() => {
-        const determineResult = (): ResultProps | null => {
-            switch (isGameOver) {
-                case playerHandValue > 21:
-                    return { message: 'Player busts. Dealer wins!' };
-                case dealerHandValue > 21:
-                    return { message: 'Dealer busts. Player wins!' };
-                case playerHandValue === 21:
-                    return { message: 'Player wins with a Blackjack!' };
-                case dealerHandValue === 21:
-                    return { message: 'Dealer wins with a Blackjack!' };
-                case playerHandValue > dealerHandValue:
-                    return { message: 'Player wins!' };
-                case playerHandValue < dealerHandValue:
-                    return { message: 'Dealer wins!' };
-                case playerHandValue === dealerHandValue:
-                    return { message: `It's a tie!` }
-                default:
-                    return null;
-            }
-        }
-
-        const gameOverResult = determineResult();
-        if (gameOverResult) setResult(gameOverResult);
-    }, [isGameOver]);
 
     const getRandomCard = (): DeckProps => {
         const randomIndex = Math.floor(Math.random() * deck.length);
@@ -155,14 +86,75 @@ export default function StartGame() {
         setPlayerHitCount(prevCount => prevCount + 1);
     }
 
-    const handleStand = () => {
-        setDealerTurn(true);
-    }
+    const handleStand = () => setDealerTurn(true);
+
+    useEffect(() => {
+        if (playerHand.length === 0 && dealerHand.length === 0) {
+            drawCard('player', 2);
+            drawCard('dealer', 1);
+        }
+
+        updateDeck();
+    }, [playerHand, dealerHand]);
+
+    useEffect(() => {
+        const checkResult = (): boolean | null => {
+            if (playerHandValue > 21 || playerHandValue === 21) return true;
+            if (playerHitCount >= 4) setDealerTurn(true);
+            return false;
+        }
+
+        const resultFound = checkResult();
+        if (resultFound) setIsGameOver(resultFound);
+    }, [playerHitCount, playerHandValue]);
+
+    useEffect(() => {
+        const checkResult = (): boolean => {
+            if (dealerTurn) {
+                if (
+                    dealerHandValue > 21 ||
+                    dealerHandValue === 21 ||
+                    dealerHandValue > playerHandValue ||
+                    dealerHandValue >= 17
+                ) return true;
+                else drawCard('dealer', 1);
+            }
+
+            return false;
+        }
+
+        const resultFound = checkResult();
+        if (resultFound) setIsGameOver(resultFound);
+    }, [dealerHandValue, dealerTurn]);
+
+    useEffect(() => {
+        const determineResult = (): ResultProps | any => {
+            switch (isGameOver) {
+                case playerHandValue > 21:
+                    return { message: 'Player busts. Dealer wins!' };
+                case dealerHandValue > 21:
+                    return { message: 'Dealer busts. Player wins!' };
+                case playerHandValue === 21:
+                    return { message: 'Player wins with a Blackjack!' };
+                case dealerHandValue === 21:
+                    return { message: 'Dealer wins with a Blackjack!' };
+                case playerHandValue > dealerHandValue:
+                    return { message: 'Player wins!' };
+                case playerHandValue < dealerHandValue:
+                    return { message: 'Dealer wins!' };
+                default:
+                    return { message: `It's a tie!` };
+            }
+        }
+
+        const gameOverResult = determineResult();
+        if (gameOverResult) setResult(gameOverResult);
+    }, [isGameOver]);
 
     return (
         <main className="flex flex-col items-center p-10 h-full space-y-52">
             <p>{deck.length}</p>
-            {isGameOver ? <p>{result?.message}</p> : null}
+            {isGameOver && <p>{result?.message}</p>}
             <div className="space-y-52">
                 <div>
                     <h1>Dealer: {dealerHandValue}</h1>
