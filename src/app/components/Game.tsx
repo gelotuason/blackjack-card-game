@@ -2,21 +2,20 @@
 
 import { generatedDeck, DeckProps } from "@/utils/deck";
 import { useEffect, useState } from "react";
+import Card from "./Card";
 
 type GameRole = 'player' | 'dealer';
 
-type ResultProps = {
-    message: string
-}
+type ResultProps = { message: string }
 
-export default function StartGame() {
+export default function Game() {
     const [deck, setDeck] = useState<DeckProps[]>(generatedDeck);
     const [playerHand, setPlayerHand] = useState<DeckProps[]>([]);
     const [dealerHand, setDealerHand] = useState<DeckProps[]>([]);
     const [playerHandValue, setPlayerHandValue] = useState<number>(0);
     const [dealerHandValue, setDealerHandValue] = useState<number>(0);
     const [playerHitCount, setPlayerHitCount] = useState<number>(0);
-    const [dealerTurn, setDealerTurn] = useState<boolean>(false);
+    const [isDealersTurn, setIsDealersTurn] = useState<boolean>(false);
     const [result, setResult] = useState<ResultProps | null>({ message: '' });
     const [isGameOver, setIsGameOver] = useState<boolean>(false);
 
@@ -50,15 +49,15 @@ export default function StartGame() {
         if (gameRole === 'player') {
             const newPlayerHand: DeckProps[] = [...playerHand, ...drawnCards];
             setPlayerHand(newPlayerHand);
-            setPlayerHandValue(calculateHandValue(newPlayerHand));
+            setPlayerHandValue(handleHandValue(newPlayerHand));
         } else {
             const newDealerHand: DeckProps[] = [...dealerHand, ...drawnCards];
             setDealerHand(newDealerHand);
-            setDealerHandValue(calculateHandValue(newDealerHand));
+            setDealerHandValue(handleHandValue(newDealerHand));
         }
     }
 
-    const calculateHandValue = (hand: DeckProps[]): number => {
+    const handleHandValue = (hand: DeckProps[]): number => {
         const constantRanks = ['J', 'Q', 'K'];
         const constantRanksValue = 10;
         const aceValues = [1, 11];
@@ -86,7 +85,7 @@ export default function StartGame() {
         setPlayerHitCount(prevCount => prevCount + 1);
     }
 
-    const handleStand = () => setDealerTurn(true);
+    const handleStand = () => setIsDealersTurn(true);
 
     useEffect(() => {
         if (playerHand.length === 0 && dealerHand.length === 0) {
@@ -98,19 +97,19 @@ export default function StartGame() {
     }, [playerHand, dealerHand]);
 
     useEffect(() => {
-        const checkResult = (): boolean | null => {
+        const checkResult = (): boolean => {
             if (playerHandValue > 21 || playerHandValue === 21) return true;
-            if (playerHitCount >= 4) setDealerTurn(true);
+            if (playerHitCount >= 4) setIsDealersTurn(true);
             return false;
         }
 
-        const resultFound = checkResult();
-        if (resultFound) setIsGameOver(resultFound);
+        const isResultFound = checkResult();
+        if (isResultFound) setIsGameOver(isResultFound);
     }, [playerHitCount, playerHandValue]);
 
     useEffect(() => {
         const checkResult = (): boolean => {
-            if (dealerTurn) {
+            if (isDealersTurn) {
                 if (
                     dealerHandValue > 21 ||
                     dealerHandValue === 21 ||
@@ -123,27 +122,20 @@ export default function StartGame() {
             return false;
         }
 
-        const resultFound = checkResult();
-        if (resultFound) setIsGameOver(resultFound);
-    }, [dealerHandValue, dealerTurn]);
+        const isResultFound = checkResult();
+        if (isResultFound) setIsGameOver(isResultFound);
+    }, [dealerHandValue, isDealersTurn]);
 
     useEffect(() => {
         const determineResult = (): ResultProps | any => {
-            switch (isGameOver) {
-                case playerHandValue > 21:
-                    return { message: 'Player busts. Dealer wins!' };
-                case dealerHandValue > 21:
-                    return { message: 'Dealer busts. Player wins!' };
-                case playerHandValue === 21:
-                    return { message: 'Player wins with a Blackjack!' };
-                case dealerHandValue === 21:
-                    return { message: 'Dealer wins with a Blackjack!' };
-                case playerHandValue > dealerHandValue:
-                    return { message: 'Player wins!' };
-                case playerHandValue < dealerHandValue:
-                    return { message: 'Dealer wins!' };
-                default:
-                    return { message: `It's a tie!` };
+            if (isGameOver) {
+                if (playerHandValue > 21) return { message: 'Player busts. Dealer wins!' };
+                else if (dealerHandValue > 21) return { message: 'Dealer busts. Player wins!' };
+                else if (playerHandValue === 21) return { message: 'Player wins with a Blackjack!' };
+                else if (dealerHandValue === 21) return { message: 'Dealer wins with a Blackjack!' };
+                else if (playerHandValue > dealerHandValue) return { message: 'Player wins!' };
+                else if (playerHandValue < dealerHandValue) return { message: 'Dealer wins!' };
+                else return { message: `It's a tie!` };
             }
         }
 
@@ -152,32 +144,29 @@ export default function StartGame() {
     }, [isGameOver]);
 
     return (
-        <main className="flex flex-col items-center p-10 h-full space-y-52">
-            <p>{deck.length}</p>
+        <main className="flex flex-col items-center justify-center p-10 h-full space-y-24">
             {isGameOver && <p>{result?.message}</p>}
-            <div className="space-y-52">
+            <div className="space-y-14">
                 <div>
-                    <h1>Dealer: {dealerHandValue}</h1>
-                    {
-                        dealerHand.map((value, index) => (
-                            <div key={index}>
-                                <p>{value.rank}</p>
-                                <p>{value.suit}</p>
-                            </div>
-                        ))
-                    }
+                    <h1 className="mb-2">Dealer: {dealerHandValue}</h1>
+                    <div className="flex -space-x-8">
+                        {
+                            dealerHand.map((value, index) => (
+                                <Card cardRank={value.rank} cardSuit={value.suit} index={index} />
+                            ))
+                        }
+                    </div>
                 </div>
 
                 <div>
-                    <h1>Player: {playerHandValue}</h1>
-                    {
-                        playerHand.map((value, index) => (
-                            <div key={index}>
-                                <p>{value.rank}</p>
-                                <p>{value.suit}</p>
-                            </div>
-                        ))
-                    }
+                    <h1 className="mb-2">Player: {playerHandValue}</h1>
+                    <div className="flex -space-x-8">
+                        {
+                            playerHand.map((value, index) => (
+                                <Card cardRank={value.rank} cardSuit={value.suit} index={index} />
+                            ))
+                        }
+                    </div>
                 </div>
             </div>
 

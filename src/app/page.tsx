@@ -1,10 +1,10 @@
-import StartGame from "./components/game-phase/start-game/start-game";
+import Game from "./components/Game";
 
 export default function Home() {
 
   return (
     <main className="h-screen max-w-[1220px] mx-auto">
-      <StartGame />
+      <Game />
     </main>
   );
 }
