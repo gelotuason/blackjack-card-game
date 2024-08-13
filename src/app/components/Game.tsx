@@ -2,11 +2,23 @@
 
 import { generatedDeck, DeckProps } from "@/utils/deck";
 import { useEffect, useState } from "react";
-import Card from "./Card";
+import { Card, CardHidden } from "./Card";
+import Bet from "./Bet";
+import ActionButton from "./ActionButton";
+import { motion } from "framer-motion";
 
 type GameRole = 'player' | 'dealer';
 
-type ResultProps = { message: string }
+type PlayerProps = {
+    bet: number
+    balance: number
+}
+type ResultProps = { message: string };
+
+const playerInitialState = {
+    bet: 0,
+    balance: 50000
+}
 
 export default function Game() {
     const [deck, setDeck] = useState<DeckProps[]>(generatedDeck);
@@ -16,8 +28,24 @@ export default function Game() {
     const [dealerHandValue, setDealerHandValue] = useState<number>(0);
     const [playerHitCount, setPlayerHitCount] = useState<number>(0);
     const [isDealersTurn, setIsDealersTurn] = useState<boolean>(false);
-    const [result, setResult] = useState<ResultProps | null>({ message: '' });
+    const [result, setResult] = useState<ResultProps>({ message: '' });
     const [isGameOver, setIsGameOver] = useState<boolean>(false);
+    const [player, setPlayer] = useState<PlayerProps>(playerInitialState);
+    const [isDeal, setIsDeal] = useState<boolean>(false);
+
+    const addBet = (chipValue: number): void => {
+        if (player.balance - chipValue >= 0)
+            setPlayer({
+                balance: player.balance - chipValue,
+                bet: player.bet + chipValue
+            })
+        else alert('Insufficient balance!');
+    }
+
+    const handleDeal = (): void => {
+        if (player.bet === 0) alert('Please add your bet');
+        else setIsDeal(prevState => !prevState);
+    }
 
     const getRandomCard = (): DeckProps => {
         const randomIndex = Math.floor(Math.random() * deck.length);
@@ -88,13 +116,13 @@ export default function Game() {
     const handleStand = () => setIsDealersTurn(true);
 
     useEffect(() => {
-        if (playerHand.length === 0 && dealerHand.length === 0) {
+        if (isDeal && playerHand.length === 0 && dealerHand.length === 0) {
             drawCard('player', 2);
             drawCard('dealer', 1);
         }
 
         updateDeck();
-    }, [playerHand, dealerHand]);
+    }, [isDeal, playerHand, dealerHand]);
 
     useEffect(() => {
         const checkResult = (): boolean => {
@@ -144,36 +172,67 @@ export default function Game() {
     }, [isGameOver]);
 
     return (
-        <main className="flex flex-col items-center justify-center p-10 h-full space-y-24">
-            {isGameOver && <p>{result?.message}</p>}
-            <div className="space-y-14">
-                <div>
-                    <h1 className="mb-2">Dealer: {dealerHandValue}</h1>
-                    <div className="flex -space-x-8">
-                        {
-                            dealerHand.map((value, index) => (
-                                <Card cardRank={value.rank} cardSuit={value.suit} index={index} />
-                            ))
-                        }
+        <main className="h-full grid content-center gap-10">
+            <h1 className="absolute inset-x-0 top-28 text-4xl text-center animate-pulse">{result.message}</h1>
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-0 place-items-center">
+                <div className="space-y-14">
+                    <div>
+                        <motion.h1
+                            className="flex justify-center mb-2"
+                            initial={{ scale: 0, x: -500 }}
+                            animate={{ scale: 1, x: 0 }}
+                        >
+                            Dealer: {isDeal ? dealerHandValue : 0}
+                        </motion.h1>
+                        <div className="flex -space-x-8">
+                            {isDeal ?
+                                dealerHand.map((value, index) => (
+                                    <Card isDeal={isDeal} cardRank={value.rank} cardSuit={value.suit} index={index} />
+                                ))
+                                :
+                                <CardHidden />
+                            }
+                        </div>
+                    </div>
+
+                    <div>
+                        <motion.h1
+                            className="flex justify-center mb-2"
+                            initial={{ scale: 0, x: -500 }}
+                            animate={{ scale: 1, x: 0 }}
+                        >
+                            Player: {isDeal ? playerHandValue : 0}
+                        </motion.h1>
+                        <div className="flex -space-x-8">
+                            {isDeal ?
+                                playerHand.map((value, index) => (
+                                    <Card isDeal={isDeal} cardRank={value.rank} cardSuit={value.suit} index={index} />
+                                ))
+                                :
+                                <>
+                                    <CardHidden />
+                                    <CardHidden />
+                                </>
+                            }
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <h1 className="mb-2">Player: {playerHandValue}</h1>
-                    <div className="flex -space-x-8">
-                        {
-                            playerHand.map((value, index) => (
-                                <Card cardRank={value.rank} cardSuit={value.suit} index={index} />
-                            ))
-                        }
-                    </div>
-                </div>
-            </div>
 
-            <div className="space-x-3">
-                <button onClick={handlePlayerHit} disabled={isGameOver || playerHitCount >= 4} className="bg-orange-500 w-24 py-1 rounded-md">Hit</button>
-                <button onClick={handleStand} disabled={isGameOver} className="bg-gray-500 w-24 py-1 rounded-md">Stand</button>
-            </div>
+                <Bet
+                    playerBet={player.bet}
+                    playerBalance={player.balance}
+                    addBet={(chipValue) => addBet(chipValue)}
+                    handleDeal={handleDeal}
+                    isDeal={isDeal}
+                />
+
+                <div className="space-x-3">
+                    <ActionButton isDeal={isDeal} handleClick={handlePlayerHit} disabled={isGameOver || playerHitCount >= 4} background="bg-orange-500">Hit</ActionButton>
+                    <ActionButton isDeal={isDeal} handleClick={handleStand} disabled={isGameOver} background="bg-slate-400">Stand</ActionButton>
+                </div>
+            </section>
         </main>
+
     )
 }
