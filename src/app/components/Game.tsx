@@ -6,6 +6,7 @@ import { Card, CardHidden } from "./Card";
 import Bet from "./Bet";
 import ActionButton from "./ActionButton";
 import { motion } from "framer-motion";
+import Result from "./Result";
 
 type GameRole = 'player' | 'dealer';
 
@@ -21,6 +22,8 @@ const playerInitialState = {
 }
 
 export default function Game() {
+    const [player, setPlayer] = useState<PlayerProps>(playerInitialState);
+    const [isDeal, setIsDeal] = useState<boolean>(false);
     const [deck, setDeck] = useState<DeckProps[]>(generatedDeck);
     const [playerHand, setPlayerHand] = useState<DeckProps[]>([]);
     const [dealerHand, setDealerHand] = useState<DeckProps[]>([]);
@@ -30,13 +33,11 @@ export default function Game() {
     const [isDealersTurn, setIsDealersTurn] = useState<boolean>(false);
     const [result, setResult] = useState<ResultProps>({ message: '' });
     const [isGameOver, setIsGameOver] = useState<boolean>(false);
-    const [player, setPlayer] = useState<PlayerProps>(playerInitialState);
-    const [isDeal, setIsDeal] = useState<boolean>(false);
 
     const addBet = (chipValue: number): void => {
         if (player.balance - chipValue >= 0)
             setPlayer({
-                balance: player.balance - chipValue,
+                ...player,
                 bet: player.bet + chipValue
             })
         else alert('Insufficient balance!');
@@ -115,6 +116,18 @@ export default function Game() {
 
     const handleStand = () => setIsDealersTurn(true);
 
+    const handleReset = () => {
+        setIsGameOver(false);
+        setPlayer({ ...player, bet: 0 });
+        setIsDeal(false);
+        setDeck(generatedDeck);
+        setPlayerHand([]);
+        setDealerHand([]);
+        setPlayerHitCount(0);
+        setIsDealersTurn(false);
+        setResult({ message: '' });
+    }
+
     useEffect(() => {
         if (isDeal && playerHand.length === 0 && dealerHand.length === 0) {
             drawCard('player', 2);
@@ -157,13 +170,33 @@ export default function Game() {
     useEffect(() => {
         const determineResult = (): ResultProps | any => {
             if (isGameOver) {
-                if (playerHandValue > 21) return { message: 'Player busts. Dealer wins!' };
-                else if (dealerHandValue > 21) return { message: 'Dealer busts. Player wins!' };
-                else if (playerHandValue === 21) return { message: 'Player wins with a Blackjack!' };
-                else if (dealerHandValue === 21) return { message: 'Dealer wins with a Blackjack!' };
-                else if (playerHandValue > dealerHandValue) return { message: 'Player wins!' };
-                else if (playerHandValue < dealerHandValue) return { message: 'Dealer wins!' };
+                if (playerHandValue > 21) {
+                    setPlayer({ ...player, balance: player.balance - player.bet });
+                    return { message: 'Player busts. Dealer wins!' };
+                }
+                else if (dealerHandValue > 21) {
+                    setPlayer({ ...player, balance: player.balance + player.bet });
+                    return { message: 'Dealer busts. Player wins!' };
+                }
+                else if (playerHandValue === 21) {
+                    setPlayer({ ...player, balance: player.balance + (player.bet + (player.bet * 1.5)) });
+                    return { message: 'Player wins with a Blackjack!' };
+                }
+                else if (dealerHandValue === 21) {
+                    setPlayer({ ...player, balance: player.balance - player.bet });
+                    return { message: 'Dealer wins with a Blackjack!' };
+                }
+                else if (playerHandValue > dealerHandValue) {
+                    setPlayer({ ...player, balance: player.balance + player.bet });
+                    return { message: 'Player wins!' };
+                }
+                else if (playerHandValue < dealerHandValue) {
+                    setPlayer({ ...player, balance: player.balance - player.bet });
+                    return { message: 'Dealer wins!' };
+                }
                 else return { message: `It's a tie!` };
+            } else {
+                handleReset();
             }
         }
 
@@ -173,7 +206,6 @@ export default function Game() {
 
     return (
         <main className="h-full grid content-center gap-10">
-            <h1 className="absolute inset-x-0 top-28 text-4xl text-center animate-pulse">{result.message}</h1>
             <section className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-0 place-items-center">
                 <div className="space-y-14">
                     <div>
@@ -187,7 +219,7 @@ export default function Game() {
                         <div className="flex -space-x-8">
                             {isDeal ?
                                 dealerHand.map((value, index) => (
-                                    <Card isDeal={isDeal} cardRank={value.rank} cardSuit={value.suit} index={index} />
+                                    <Card key={index} isDeal={isDeal} cardRank={value.rank} cardSuit={value.suit} />
                                 ))
                                 :
                                 <CardHidden />
@@ -206,7 +238,7 @@ export default function Game() {
                         <div className="flex -space-x-8">
                             {isDeal ?
                                 playerHand.map((value, index) => (
-                                    <Card isDeal={isDeal} cardRank={value.rank} cardSuit={value.suit} index={index} />
+                                    <Card key={index} isDeal={isDeal} cardRank={value.rank} cardSuit={value.suit} />
                                 ))
                                 :
                                 <>
@@ -218,12 +250,12 @@ export default function Game() {
                     </div>
                 </div>
 
-
                 <Bet
                     playerBet={player.bet}
                     playerBalance={player.balance}
                     addBet={(chipValue) => addBet(chipValue)}
                     handleDeal={handleDeal}
+                    handleReset={handleReset}
                     isDeal={isDeal}
                 />
 
@@ -232,7 +264,8 @@ export default function Game() {
                     <ActionButton isDeal={isDeal} handleClick={handleStand} disabled={isGameOver} background="bg-slate-400">Stand</ActionButton>
                 </div>
             </section>
-        </main>
 
+            <Result isGameOver={isGameOver} message={result.message} handleReset={handleReset} />
+        </main>
     )
 }

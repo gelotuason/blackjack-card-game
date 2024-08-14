@@ -10,7 +10,7 @@ type ActionButtonProps = {
 
 export default function ActionButton({ children, disabled, background, handleClick, isDeal }: ActionButtonProps) {
     return (
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
             {isDeal &&
                 <motion.button
                     onClick={(e) => handleClick(e)}

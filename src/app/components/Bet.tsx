@@ -11,6 +11,7 @@ type BetProps = {
     playerBalance: number
     addBet: (chipValue: number) => void
     handleDeal: (event: React.MouseEvent<HTMLButtonElement>) => void
+    handleReset: (event: React.MouseEvent<HTMLButtonElement>) => void
     isDeal: boolean
 }
 
@@ -22,7 +23,7 @@ const chips: Chips[] = [
     { name: '$10K', value: 10000 },
 ]
 
-export default function Bet({ playerBet, playerBalance, addBet, handleDeal, isDeal }: BetProps) {
+export default function Bet({ playerBet, playerBalance, addBet, handleDeal, isDeal, handleReset }: BetProps) {
     return (
         <AnimatePresence mode="popLayout">
             {!isDeal &&
@@ -47,6 +48,8 @@ export default function Bet({ playerBet, playerBalance, addBet, handleDeal, isDe
                             ))
                         }
                     </section>
+
+                    <button onClick={(e) => handleReset(e)} className="bg-slate-400 w-max mx-auto px-4 py-1">Reset</button>
 
                     <div className="flex items-center justify-center gap-8">
                         <div className="flex flex-col gap-2">
