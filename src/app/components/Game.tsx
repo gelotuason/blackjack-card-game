@@ -205,8 +205,8 @@ export default function Game() {
     }, [isGameOver]);
 
     return (
-        <main className="h-full grid content-center gap-10">
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-0 place-items-center">
+        <main className="h-max md:h-full grid content-center gap-10">
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-0 place-items-center">
                 <div className="space-y-14">
                     <div>
                         <motion.h1
