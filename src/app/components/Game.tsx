@@ -35,12 +35,15 @@ export default function Game() {
     const [isGameOver, setIsGameOver] = useState<boolean>(false);
 
     const addBet = (chipValue: number): void => {
-        if (player.balance - chipValue >= 0)
+        if (
+            player.balance - chipValue >= 0 &&
+            player.bet + chipValue <= player.balance
+        ) {
             setPlayer({
                 ...player,
                 bet: player.bet + chipValue
-            })
-        else alert('Insufficient balance!');
+            });
+        } else alert('Insufficient balance!');
     }
 
     const handleDeal = (): void => {
