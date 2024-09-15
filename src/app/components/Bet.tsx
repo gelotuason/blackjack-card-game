@@ -12,7 +12,6 @@ type BetProps = {
     addBet: (chipValue: number) => void
     handleDeal: (event: React.MouseEvent<HTMLButtonElement>) => void
     handleReset: (event: React.MouseEvent<HTMLButtonElement>) => void
-    isDeal: boolean
 }
 
 const chips: Chips[] = [
@@ -23,43 +22,41 @@ const chips: Chips[] = [
     { name: '$10K', value: 10000 },
 ]
 
-export default function Bet({ playerBet, playerBalance, addBet, handleDeal, isDeal, handleReset }: BetProps) {
+export default function Bet({ playerBet, playerBalance, addBet, handleDeal, handleReset }: BetProps) {
     return (
         <AnimatePresence mode="popLayout">
-            {!isDeal &&
-                <motion.section
-                    className="flex flex-col justify-center gap-10"
-                    initial={{ x: 500, scale: 0 }}
-                    animate={{ x: 0, scale: 1 }}
-                    exit={{ scale: 0 }}
-                >
-                    <section className={`flex gap-4 justify-center items-center flex-wrap`}>
-                        {
-                            chips.map((chip) => (
-                                <button onClick={() => addBet(chip.value)} key={chip.value} className="relative h-[70px] w-[70px] md:h-[90px] md:w-[90px]">
-                                    <Image
-                                        src='/chipOrange.png'
-                                        fill
-                                        alt="Orange Chip"
-                                        className="object-cover"
-                                    />
-                                    <p className="absolute inset-0 flex justify-center items-center font-semibold text-sm md:text-lg">{chip.name}</p>
-                                </button>
-                            ))
-                        }
-                    </section>
+            <motion.section
+                className="flex flex-col justify-center gap-10"
+                initial={{ x: 500, scale: 0 }}
+                animate={{ x: 0, scale: 1 }}
+                exit={{ scale: 0 }}
+            >
+                <section className={`flex gap-4 justify-center items-center flex-wrap`}>
+                    {
+                        chips.map((chip) => (
+                            <button onClick={() => addBet(chip.value)} key={chip.value} className="relative h-[70px] w-[70px] md:h-[90px] md:w-[90px]">
+                                <Image
+                                    src='/chipOrange.png'
+                                    fill
+                                    alt="Orange Chip"
+                                    className="object-cover"
+                                />
+                                <p className="absolute inset-0 flex justify-center items-center font-semibold text-sm md:text-lg">{chip.name}</p>
+                            </button>
+                        ))
+                    }
+                </section>
 
-                    <button onClick={(e) => handleReset(e)} className="bg-slate-400 w-max mx-auto px-4 py-1">Reset</button>
+                <button onClick={(e) => handleReset(e)} className="bg-slate-400 w-max mx-auto px-4 py-1">Reset</button>
 
-                    <div className="flex items-center justify-center gap-8">
-                        <div className="flex flex-col gap-2">
-                            <p>Bet: ${playerBet}</p>
-                            <p>Balance: ${playerBalance}</p>
-                        </div>
-                        <button onClick={(e) => handleDeal(e)} className="bg-orange-600 px-10 py-2">Deal</button>
+                <div className="flex items-center justify-center gap-8">
+                    <div className="flex flex-col gap-2">
+                        <p>Bet: ${playerBet}</p>
+                        <p>Balance: ${playerBalance}</p>
                     </div>
-                </motion.section>
-            }
+                    <button onClick={(e) => handleDeal(e)} className="bg-orange-600 px-10 py-2">Deal</button>
+                </div>
+            </motion.section>
         </AnimatePresence>
     )
 }

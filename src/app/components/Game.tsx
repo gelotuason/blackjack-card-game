@@ -33,6 +33,7 @@ export default function Game() {
     const [isDealersTurn, setIsDealersTurn] = useState<boolean>(false);
     const [result, setResult] = useState<ResultProps>({ message: '' });
     const [isGameOver, setIsGameOver] = useState<boolean>(false);
+    const [isAceAdjusted, setIsAceAdjusted] = useState<boolean>(false);
 
     const addBet = (chipValue: number): void => {
         if (
@@ -81,32 +82,48 @@ export default function Game() {
         if (gameRole === 'player') {
             const newPlayerHand: DeckProps[] = [...playerHand, ...drawnCards];
             setPlayerHand(newPlayerHand);
-            setPlayerHandValue(handleHandValue(newPlayerHand));
+            setPlayerHandValue(handleHandValue(newPlayerHand, 'player'));
         } else {
             const newDealerHand: DeckProps[] = [...dealerHand, ...drawnCards];
             setDealerHand(newDealerHand);
-            setDealerHandValue(handleHandValue(newDealerHand));
+            setDealerHandValue(handleHandValue(newDealerHand, 'dealer'));
         }
     }
 
-    const handleHandValue = (hand: DeckProps[]): number => {
+    const handleHandValue = (hand: DeckProps[], gameRole: GameRole): number => {
         const constantRanks = ['J', 'Q', 'K'];
         const constantRanksValue = 10;
-        const aceValues = [1, 11];
 
+        let aceCount = 0;
         let handValue = 0;
+
+        const adjustAceValue = () => {
+            handValue -= 10;
+            aceCount -= 1;
+        }
 
         if (hand.length !== 0) {
             hand.map(card => {
                 if (constantRanks.includes(card.rank)) {
                     handValue += constantRanksValue;
                 } else if (card.rank == 'A') {
-                    if (handValue <= 10) handValue += aceValues[1];
-                    else handValue += aceValues[0];
+                    aceCount += 1;
+                    handValue += 11;
                 } else {
                     handValue += parseInt(card.rank);
                 }
             });
+        }
+
+        if (gameRole === 'player') {
+            while (handValue > 21 && aceCount > 0) {
+                setIsAceAdjusted(true);
+                adjustAceValue();
+            }
+        } else {
+            while (handValue > 17 && aceCount > 0 && handValue !== 21) {
+                adjustAceValue();
+            }
         }
 
         return handValue;
@@ -129,6 +146,7 @@ export default function Game() {
         setPlayerHitCount(0);
         setIsDealersTurn(false);
         setResult({ message: '' });
+        setIsAceAdjusted(false);
     }
 
     useEffect(() => {
@@ -209,17 +227,17 @@ export default function Game() {
 
     return (
         <main className="h-max md:h-full grid content-center gap-10">
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-0 place-items-center">
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-0 h-max">
                 <div className="space-y-14">
                     <div>
                         <motion.h1
-                            className="flex justify-center mb-2"
+                            className="text-center mb-2"
                             initial={{ scale: 0, x: -500 }}
                             animate={{ scale: 1, x: 0 }}
                         >
                             Dealer: {isDeal ? dealerHandValue : 0}
                         </motion.h1>
-                        <div className="flex -space-x-8">
+                        <div className="flex -space-x-8 justify-center">
                             {isDeal ?
                                 dealerHand.map((value, index) => (
                                     <Card key={index} isDeal={isDeal} cardRank={value.rank} cardSuit={value.suit} />
@@ -232,13 +250,13 @@ export default function Game() {
 
                     <div>
                         <motion.h1
-                            className="flex justify-center mb-2"
+                            className="text-center mb-2"
                             initial={{ scale: 0, x: -500 }}
                             animate={{ scale: 1, x: 0 }}
                         >
                             Player: {isDeal ? playerHandValue : 0}
                         </motion.h1>
-                        <div className="flex -space-x-8">
+                        <div className="flex justify-center -space-x-8 mb-4">
                             {isDeal ?
                                 playerHand.map((value, index) => (
                                     <Card key={index} isDeal={isDeal} cardRank={value.rank} cardSuit={value.suit} />
@@ -250,22 +268,30 @@ export default function Game() {
                                 </>
                             }
                         </div>
+
+                        {isAceAdjusted ? <p className="text-center animate-pulse">💡 The value of your Ace has been adjusted to prevent going over 21.</p> : <p className="h-[24px]"></p>}
                     </div>
                 </div>
 
-                <Bet
-                    playerBet={player.bet}
-                    playerBalance={player.balance}
-                    addBet={(chipValue) => addBet(chipValue)}
-                    handleDeal={handleDeal}
-                    handleReset={handleReset}
-                    isDeal={isDeal}
-                />
+                <section className="flex items-center justify-center">
+                    {isDeal
+                        ? <div className="flex flex-col items-center gap-10">
 
-                <div className="space-x-3">
-                    <ActionButton isDeal={isDeal} handleClick={handlePlayerHit} disabled={isGameOver || playerHitCount >= 4} background="bg-orange-500">Hit</ActionButton>
-                    <ActionButton isDeal={isDeal} handleClick={handleStand} disabled={isGameOver} background="bg-slate-400">Stand</ActionButton>
-                </div>
+                            <div className="space-x-3">
+                                <ActionButton handleClick={handlePlayerHit} disabled={isGameOver || playerHitCount >= 4} background="bg-orange-500">Hit</ActionButton>
+                                <ActionButton handleClick={handleStand} disabled={isGameOver} background="bg-slate-400">Stand</ActionButton>
+                            </div>
+                        </div>
+
+                        : <Bet
+                            playerBet={player.bet}
+                            playerBalance={player.balance}
+                            addBet={(chipValue) => addBet(chipValue)}
+                            handleDeal={handleDeal}
+                            handleReset={handleReset}
+                        />
+                    }
+                </section>
             </section>
 
             <Result isGameOver={isGameOver} message={result.message} handleReset={handleReset} />
