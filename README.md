@@ -1,5 +1,5 @@
 ## Brief summary
-This is a web-based application using modern technologies that offers an experience to play your favorite blackjack card game.
+This is a web-based application using modern technologies that offers an experience to play your favorite card game.
 
 ## Built with
 - Typescript
